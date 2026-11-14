@@ -3,9 +3,9 @@ function findBuild(items, targets, mode='minimum') {
  const groups=Array.from({length:6},(_,slot)=>items.filter(x=>x.slot===slot));
  if(groups.some(g=>!g.length))return null;
  groups.sort((a,b)=>a.length-b.length);
- const vectors=groups.map(g=>g.map(item=>{const v=Array(10).fill(0);item.skills.forEach(s=>v[s]++);return {item,v}}));
- const bounds=Array.from({length:7},()=>Array(10).fill(0));
- for(let d=5;d>=0;d--)for(let s=0;s<10;s++)bounds[d][s]=bounds[d+1][s]+Math.max(...vectors[d].map(x=>x.v[s]));
+ const vectors=groups.map(g=>g.map(item=>{const v=Array(targets.length).fill(0);item.skills.forEach(s=>v[s]++);return {item,v}}));
+ const bounds=Array.from({length:7},()=>Array(targets.length).fill(0));
+ for(let d=5;d>=0;d--)for(let s=0;s<targets.length;s++)bounds[d][s]=bounds[d+1][s]+Math.max(...vectors[d].map(x=>x.v[s]));
  const failed=new Set();const chosen=[];
  function dfs(d,sum){
   if(sum.some((v,s)=>v+bounds[d][s]<targets[s]||(mode==='exact'&&v>targets[s])))return null;
@@ -14,7 +14,7 @@ function findBuild(items, targets, mode='minimum') {
   for(const {item,v} of vectors[d]){chosen.push(item);const result=dfs(d+1,sum.map((n,s)=>n+v[s]));if(result)return result;chosen.pop()}
   failed.add(key);return null;
  }
- return dfs(0,Array(10).fill(0));
+ return dfs(0,Array(targets.length).fill(0));
 }
 if(typeof module!=='undefined')module.exports={findBuild};
 
@@ -24,10 +24,10 @@ function findBestBuild(items,targets,mode='minimum',priorities=targets.map((_,i)
  const exact=findBuild(items,targets,mode);if(exact)return {result:exact,perfect:true};
  const groups=Array.from({length:6},(_,slot)=>items.filter(x=>x.slot===slot));if(groups.some(g=>!g.length))return {result:null,perfect:false};
  groups.sort((a,b)=>a.length-b.length);
- const vectors=groups.map(g=>g.map(item=>{const v=Array(10).fill(0);item.skills.forEach(s=>v[s]++);return {item,v}}));
+ const vectors=groups.map(g=>g.map(item=>{const v=Array(targets.length).fill(0);item.skills.forEach(s=>v[s]++);return {item,v}}));
  const levels=[...new Set(priorities)].sort((a,b)=>a-b);
- const bounds=Array.from({length:7},()=>Array(10).fill(0));
- for(let d=5;d>=0;d--)for(let s=0;s<10;s++)bounds[d][s]=bounds[d+1][s]+Math.max(...vectors[d].map(x=>x.v[s]));
+ const bounds=Array.from({length:7},()=>Array(targets.length).fill(0));
+ for(let d=5;d>=0;d--)for(let s=0;s<targets.length;s++)bounds[d][s]=bounds[d+1][s]+Math.max(...vectors[d].map(x=>x.v[s]));
  const compare=(a,b)=>{for(let i=0;i<a.length;i++)if(a[i]!==b[i])return a[i]-b[i];return 0};
  function score(sum,d){return levels.map(p=>sum.reduce((n,v,s)=>n+(priorities[s]===p?Math.max(0,targets[s]-v-bounds[d][s])+(mode==='exact'?Math.max(0,v-targets[s]):0):0),0))}
  let best=null,bestScore=levels.map(()=>Infinity);const seen=new Set(),chosen=[];
@@ -37,6 +37,6 @@ function findBestBuild(items,targets,mode='minimum',priorities=targets.map((_,i)
  const ordered=vectors[d].map(x=>({...x,sum:sum.map((n,s)=>n+x.v[s])})).map(x=>({...x,bound:score(x.sum,d+1)})).sort((a,b)=>compare(a.bound,b.bound));
  for(const x of ordered){chosen.push(x.item);dfs(d+1,x.sum);chosen.pop()}
  }
- dfs(0,Array(10).fill(0));return {result:best.sort((a,b)=>a.slot-b.slot),perfect:false,penalties:bestScore};
+ dfs(0,Array(targets.length).fill(0));return {result:best.sort((a,b)=>a.slot-b.slot),perfect:false,penalties:bestScore};
 }
 if(typeof module!=='undefined')module.exports.findBestBuild=findBestBuild;
